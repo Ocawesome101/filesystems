@@ -2,7 +2,7 @@
 
 The Cynosure File System
 
-This filesystem is built for small (<1GB) hard disks.  As such, it does not have support for more than 65,535 files.  It is also built for relative simplicity while still having access to a full POSIX-like suite of features (permissions, ownership, access times, etc).
+This filesystem is built for small (<1GB) hard disks.  As such, it does not have support for more than 65,535 files.  It is also built for relative simplicity while still having access to a full POSIX-like suite of features (permissions, ownership, access times, etc).  A great deal of inspiration is taken from the Second Extended File System.
 
 Sectors are assumed to be 512 bytes.  All numbers are stored in little-endian format.  All sector indices are 1-based, in keeping with Lua convention.
 
@@ -31,12 +31,45 @@ struct Superblock {
   // Volume name
   char[32] volume_name;
   // Last mount path
-  char[255] last_mount_path;
+  char[64] last_mount_path;
+  // reserved for future use
+  char[376] padding;
 }
 ```
+After the superblock come the inode and block bitmaps.
 
 ```c
 struct Inode {
-
+  // File type and permissions - see below
+  uint16 mode;
+  // UID that owns the file
+  uint16 uid;
+  // GID that owns the file
+  uint16 gid;
+  // last access time
+  uint64 access;
+  // creation time
+  uint64 create;
+  // last modification time
+  uint64 modify;
+  // file size
+  uint64 size;
+  // number of times this inode is referenced
+  uint16 references;
+  // file name - not null-terminated but trailing zeroes should be stripped
+  // may under no circumstances contain a slash (/)
+  char[255] filename;
 }
 ```
+
+<table>
+  <thead>
+    File Types
+  </thead>
+  <tbody>
+    <tr>
+      <td>c1</td>
+      <td>c2</td>
+    </tr>
+  </tbody>
+</table>
