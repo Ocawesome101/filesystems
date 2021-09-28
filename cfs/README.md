@@ -27,7 +27,7 @@ struct Superblock {
   // Block count (1 block = 2 sectors)
   uint16 blocks;
   // Total used blocks
-  uint32 used;
+  unsigned int32 used;
   // Volume name
   char[32] volume_name;
   // Last mount path
@@ -36,7 +36,7 @@ struct Superblock {
   char[376] padding;
 }
 ```
-After the superblock come the inode and block bitmaps.
+After the superblock come the inode and block bitmaps.  The inode bitmap contains `Superblock.inodes` bits (rounded up to the nearest byte), each of which specifies one inode's being used or unused.  Immediately following this is the block bitmap, which contains `Superblock.blocks` bits and indicates whether a block has been used or not.
 
 ```c
 struct Inode {
