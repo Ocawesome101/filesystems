@@ -95,7 +95,7 @@ local inode = struct {
 local _fsobj = {}
 
 -- read a raw block from the drive.  
-function _fsobj:readRawBlock(n)
+function _fsobj:_readRawBlock(n)
   n = n + 1
   local n_sectors_per_block = math.ceil(self.blockSize / self.sectorSize)
   local sect_offset = n_sectors_per_block * (n - 1)
@@ -106,9 +106,14 @@ function _fsobj:readRawBlock(n)
   return data
 end
 
-function _fsobj:readInode(n)
+function _fsobj:_readInode(n)
   local bgroup = (n - 1) // self.superblock.inodes_per_group
   local iidx = (n - 1) % self.superblock.inodes_per_group
+end
+
+function _fsobj:_readBlockGroupDescriptors()
+  local first = self:_readRawBlock(2)
+  
 end
 
 local function new(drive)
@@ -120,7 +125,7 @@ local function new(drive)
     blockSize = 1024
   }, {__index = _fsobj})
   
-  local sblk = superblock(new:readRawBlock(1))
+  local sblk = superblock(new:_readRawBlock(1))
   
   sblk.uuid = sblk.uuid
     --convert to hex
@@ -163,7 +168,7 @@ local function new(drive)
   assert(sblk.feature_ro_compat & 0x0004 == 0,
     "EXT2_FEATURE_BINTREE_DIR unsupported") 
   
-  local bgdt = block_group_descriptor(new:readRawBlock(2))
+  new:_readBlockGroupDescriptors()
   return new
 end
 
