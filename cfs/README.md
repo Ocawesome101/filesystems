@@ -62,6 +62,7 @@ struct Inode {
 }
 ```
 
+<html>
 <table>
   <thead>
     <th colspan="3">File Modes</th>
@@ -148,3 +149,4 @@ struct Inode {
     </tr>
   </tbody>
 </table>
+</html>
