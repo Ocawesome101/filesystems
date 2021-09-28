@@ -13,7 +13,7 @@ The Filesystem Information Section (hereafter "FIS") resides immediately after t
 ```c
 struct Superblock {
   // The filesystem signature "\x1bCFS"
-  char[4] signature;
+  char signature[4];
   // Filesystem major revision
   uint32 rev_major;
   // Filesystem minor revision
@@ -21,7 +21,7 @@ struct Superblock {
   // OS that created the filesystem
   uint32 osid;
   // Filesystem UUID
-  char[16] uuid;
+  char uuid[16];
   // Inode count
   uint16 inodes;
   // Block count (1 block = 2 sectors)
@@ -29,11 +29,11 @@ struct Superblock {
   // Total used blocks
   uint32 used;
   // Volume name
-  char[32] volume_name;
+  char volume_name[32];
   // Last mount path
-  char[64] last_mount_path;
+  char last_mount_path[64];
   // reserved for future use
-  char[376] padding;
+  char padding[376];
 }
 ```
 After the superblock come the inode and block bitmaps.  The inode bitmap contains `Superblock.inodes` bits (rounded up to the nearest byte), each of which specifies one inode's being used or unused.  Immediately following this (starting in the next sector!) is the block bitmap, which contains `Superblock.blocks` bits and indicates whether a block has been used or not.
@@ -63,9 +63,9 @@ struct Inode {
   uint32 datablock;
   // file name - not null-terminated but trailing zeroes should be stripped
   // may under no circumstances contain a slash (/)
-  char[64] filename;
+  char filename[64];
   // extended inode data
-  char[152] extended_data;
+  char extended_data[152];
 }
 ```
 

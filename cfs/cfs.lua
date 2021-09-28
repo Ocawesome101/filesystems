@@ -1,8 +1,18 @@
--- CFS driver --
+--[[
+    Reference implementation of the Cynosure File
+    System.
 
-local struct = require("struct")
+    Copyright (c) 2021 Ocawesome101 under the
+    DSLv2.
 
-local 
+    ]]--
+
+local _ = require("struct")
+local struct = _.struct
+
+local superblock = struct {
+  _.char[4] "signature";
+}
 
 local function new(drive)
   if checkArg then checkArg(1, drive, "table") end

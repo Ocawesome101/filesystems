@@ -3,7 +3,8 @@
     Filesystem for OpenComputers.  Only supports
     1KB block sizes.
 
-    Copyright (c) 2021 Ocawesome101 under the DSLv2.
+    Copyright (c) 2021 Ocawesome101 under the
+    DSLv2.
     
     ]]--
 
