@@ -83,7 +83,7 @@ These are effectively EXT2's file modes shuffled around a bit.
 | 0x0200 | setuid bit       |
 | 0x0400 | setgid bit       |
 | 0x0800 | sticky bit       |
-|  Final 4 bits denote type |
+| | Final 4 bits denote type |
 | 0x1000 | regular file     |
 | 0x2000 | directory        |
 | 0x4000 | character device |
