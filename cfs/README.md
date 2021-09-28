@@ -97,7 +97,9 @@ These are effectively EXT2's file modes shuffled around a bit.
 | 0xC000 | FIFO             |
 
 ## Recommended Filesystem Counts
-These counts are not fixed, and may be modified to change the balance of file count to file size.  However, those listed here should be sufficient for most uses.
+These counts are not fixed, and may be modified to change the balance of file count to file size.  However, those listed here should be sufficient for most uses.  These should be the defaults for a `mkfs.cfs` utility.
+
+Note that these *may not* be changed after filesystem creation without the use of special tools.
 
 On a 4MB filesystem, the recommended counts for these (and the space they will consume) are:
   - Inodes: 1536, inode bitmap 192 bytes, inode table 384KB (768 sectors)
