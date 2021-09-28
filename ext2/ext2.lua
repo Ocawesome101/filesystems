@@ -139,6 +139,7 @@ local function new(drive)
   print(sblk.feature_compat, sblk.feature_incompat, sblk.feature_ro_compat)
   print(sblk.first_ino, sblk.inode_size)
   print(sblk.blocks_per_group, sblk.inodes_per_group)
+  print(sblk.inodes_count, sblk.blocks_count)
 
   new.features = {
     sparse_superblock = sblk.feature_ro_compat & 0x0001 ~= 0,

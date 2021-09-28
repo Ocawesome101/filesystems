@@ -59,13 +59,17 @@ struct Inode {
   uint32 size;
   // number of times this inode is referenced
   uint16 references;
+  // pointer to the first data block (holds pointers to the real data blocks)
+  uint32 datablock;
   // file name - not null-terminated but trailing zeroes should be stripped
   // may under no circumstances contain a slash (/)
-  char[220] filename;
+  char[64] filename;
+  // extended inode data
+  char[152] extended_data;
 }
 ```
 
-When an inode is a directory, 
+If the inode is a regular file, its `datablock` contains 32 pointers to data blocks.  If an inode is a directory, its `datablock` contains 16-bit references to other inodes.  If an inode is a symbolic link *and* the path it references is longer than 152 bytes, its datablock contains the path which the link references.  Otherwise, it is stored in the inode's `extended_data`.  If the inode is a character device, block device, or FIFO, the `extended_data` section contains information about its parameters and the `datablock` pointer will be `0`.
 
 #### File Modes
 These are effectively EXT2's file modes shuffled around a bit.
@@ -89,8 +93,8 @@ These are effectively EXT2's file modes shuffled around a bit.
 | 0x4000 | character device |
 | 0x6000 | block device     |
 | 0x8000 | symbolic link    |
-| 0xa000 | socket           |
-| 0xc000 | FIFO             |
+| 0xA000 | socket           |
+| 0xC000 | FIFO             |
 
 ## Recommended Filesystem Counts
 These counts are not fixed, and may be modified to change the balance of file count to file size.  However, those listed here should be sufficient for most uses.
