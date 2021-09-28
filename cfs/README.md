@@ -8,10 +8,10 @@ Sectors are assumed to be 512 bytes.  All numbers are stored in little-endian fo
 
 The first sector of the disk will always contain code to load the boot loader from a fixed offset.  Whether the BIOS uses this is optional.
 
-The Filesystem Information Section (hereafter "FIS") resides immediately after this, at sector 2.
+The Filesystem Information Sector (hereafter "FIS") resides immediately after this, at sector 2.
 
 ```c
-struct Superblock {
+struct FIS {
   // The filesystem signature "\x1bCFS"
   char signature[4];
   // Filesystem major revision
@@ -38,7 +38,7 @@ struct Superblock {
   char padding[376];
 }
 ```
-After the superblock come the inode and block bitmaps.  The inode bitmap contains `Superblock.inodes` bits (rounded up to the nearest byte), each of which specifies one inode's being used or unused.  Immediately following this (starting in the next sector!) is the block bitmap, which contains `Superblock.blocks` bits and indicates whether a block has been used or not.
+After the FIS come the inode and block bitmaps.  The inode bitmap contains `FIS.inodes` bits (rounded up to the nearest byte), each of which specifies one inode's being used or unused.  Immediately following this (starting in the next sector!) is the block bitmap, which contains `FIS.blocks` bits and indicates whether a block has been used or not.
 
 After this comes the inode table, a preallocated space containing data for all inodes.  The first inode is always set as the root directory.
 
