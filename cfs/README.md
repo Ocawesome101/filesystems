@@ -64,7 +64,7 @@ struct Inode {
 
 <table>
   <thead>
-    <th>File Types</th>
+    <th colspan="3">File Types</th>
   </thead>
   <tbody>
     <tr>
