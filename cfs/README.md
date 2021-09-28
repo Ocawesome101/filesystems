@@ -63,24 +63,25 @@ struct Inode {
 ```
 
 #### File Modes
-| Value  | Description    |
-| ------ | -------------- |
-| 0x0001 | Owner read     |
-| 0x0002 | Owner write    |
-| 0x0004 | Owner execute  |
-| 0x0008 | Group read     |
-| 0x0010 | Group write    |
-| 0x0020 | Group execute  |
-| 0x0040 | Others read    |
-| 0x0080 | Others write   |
-| 0x0100 | Others execute |
-| 0x0200 | setuid bit     |
-| 0x0400 | setgid bit     |
-| 0x0800 | sticky bit     |
-| 0x1000 | Regular file   |
-| 0x2000 | Directory      |
-| 0x4000 |  |
-| 0x6000 |  |
-| 0x8000 |  |
-| 0xa000 |  |
-| 0xc000 |  |
+These are effectively EXT2's file modes shuffled around a bit.
+| Value  | Description      |
+| ------ | ---------------- |
+| 0x0001 | owner read       |
+| 0x0002 | owner write      |
+| 0x0004 | owner execute    |
+| 0x0008 | group read       |
+| 0x0010 | group write      |
+| 0x0020 | group execute    |
+| 0x0040 | others read      |
+| 0x0080 | others write     |
+| 0x0100 | others execute   |
+| 0x0200 | setuid bit       |
+| 0x0400 | setgid bit       |
+| 0x0800 | sticky bit       |
+| 0x1000 | regular file     |
+| 0x2000 | directory        |
+| 0x4000 | character device |
+| 0x6000 | block device     |
+| 0x8000 | symbolic link    |
+| 0xa000 | socket           |
+| 0xc000 | FIFO             |
