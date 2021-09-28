@@ -64,12 +64,12 @@ struct Inode {
 
 <table>
   <thead>
-    File Types
+    <th>File Types</th>
   </thead>
   <tbody>
     <tr>
-      <td>c1</td>
-      <td>c2</td>
+      <th>c1</th>
+      <th>c2</th>
     </tr>
   </tbody>
 </table>
