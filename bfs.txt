@@ -1,3 +1,0 @@
-// bfs - basic file system //
-
-This filesystem is 

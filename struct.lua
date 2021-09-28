@@ -58,7 +58,7 @@ function gmt.__index(t, k)
     end
     
     if not tp then return nil end
-    
+
     return function(value)
       return {fmtstr = types[tp] .. tonumber(k:match("%d+$") or "0")//8,
         field = value}
