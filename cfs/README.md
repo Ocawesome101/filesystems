@@ -26,8 +26,10 @@ struct Superblock {
   uint16 inodes;
   // Block count (1 block = 2 sectors)
   uint16 blocks;
+  // Total used inodes
+  uint16 used_inodes;
   // Total used blocks
-  uint32 used;
+  uint16 used_blocks;
   // Volume name
   char volume_name[32];
   // Last mount path
