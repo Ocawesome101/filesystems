@@ -71,7 +71,7 @@ struct Inode {
 }
 ```
 
-If the inode is a regular file, its `datablock` contains 32 pointers to data blocks.  If an inode is a directory, its `datablock` contains 16-bit references to other inodes.  If an inode is a symbolic link *and* the path it references is longer than 152 bytes, its datablock contains the path which the link references.  Otherwise, it is stored in the inode's `extended_data`.  If the inode is a character device, block device, or FIFO, the `extended_data` section contains information about its parameters and the `datablock` pointer will be `0`.
+If the inode is a regular file, its `datablock` contains 512 pointers to data blocks; if all pointers here are used then the final pointer is 32-bit and points to another block in `datablock` format.  If an inode is a directory, its `datablock` contains 16-bit references to other inodes.  If an inode is a symbolic link *and* the path it references is longer than 152 bytes, its datablock contains the path which the link references.  Otherwise, it is stored in the inode's `extended_data`.  If the inode is a character device, block device, or FIFO, the `extended_data` section contains information about its parameters and the `datablock` pointer will be `0`.
 
 #### File Modes
 These are effectively EXT2's file modes shuffled around a bit.
