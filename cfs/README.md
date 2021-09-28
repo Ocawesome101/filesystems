@@ -62,91 +62,25 @@ struct Inode {
 }
 ```
 
-<html>
-<table>
-  <thead>
-    <th colspan="3">File Modes</th>
-  </thead>
-  <tbody>
-    <tr>
-      <th>Value</th>
-      <th>Description</th>
-    </tr>
-    <tr>
-      <tb colspan="3"> -- Permissions -- </tb>
-    </tr>
-    <tr>
-      <tb>0x0001</tb>
-      <tb></tb>
-    </tr>
-    <tr>
-      <tb>0x0002</tb>
-      <tb></tb>
-    </tr>
-    <tr>
-      <tb>0x0004</tb>
-      <tb></tb>
-    </tr>
-    <tr>
-      <tb>0x0008</tb>
-      <tb></tb>
-    </tr>
-    <tr>
-      <tb>0x0010</tb>
-      <tb></tb>
-    </tr>
-    <tr>
-      <tb>0x0020</tb>
-      <tb></tb>
-    </tr>
-    <tr>
-      <tb>0x0040</tb>
-      <tb></tb>
-    </tr>
-    <tr>
-      <tb>0x0080</tb>
-      <tb></tb>
-    </tr>
-    <tr>
-      <tb>0x0100</tb>
-      <tb></tb>
-    </tr>
-    <tr>
-      <tb>0x0200</tb>
-      <tb></tb>
-    </tr>
-    <tr>
-      <tb>0x0400</tb>
-      <tb></tb>
-    </tr>
-    <tr>
-      <tb>0x0800</tb>
-      <tb></tb>
-    </tr>
-    <tr>
-      <tb>0x1000</tb>
-      <tb></tb>
-    </tr>
-    <tr>
-      <tb>0x2000</tb>
-      <tb></tb>
-    </tr>
-    <tr>
-      <tb>0x4000</tb>
-      <tb></tb>
-    </tr>
-    <tr>
-      <tb>0x8000</tb>
-      <tb></tb>
-    </tr>
-    <tr>
-      <tb>0xa000</tb>
-      <tb></tb>
-    </tr>
-    <tr>
-      <tb>0xc000</tb>
-      <tb></tb>
-    </tr>
-  </tbody>
-</table>
-</html>
+#### File Modes
+| Value  | Description    |
+| ------ | -------------- |
+| 0x0001 | Owner read     |
+| 0x0002 | Owner write    |
+| 0x0004 | Owner execute  |
+| 0x0008 | Group read     |
+| 0x0010 | Group write    |
+| 0x0020 | Group execute  |
+| 0x0040 | Others read    |
+| 0x0080 | Others write   |
+| 0x0100 | Others execute |
+| 0x0200 | setuid bit     |
+| 0x0400 | setgid bit     |
+| 0x0800 | sticky bit     |
+| 0x1000 | Regular file   |
+| 0x2000 | Directory      |
+| 0x4000 |  |
+| 0x6000 |  |
+| 0x8000 |  |
+| 0xa000 |  |
+| 0xc000 |  |
