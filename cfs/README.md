@@ -64,12 +64,87 @@ struct Inode {
 
 <table>
   <thead>
-    <th colspan="3">File Types</th>
+    <th colspan="3">File Modes</th>
   </thead>
   <tbody>
     <tr>
-      <th>c1</th>
-      <th>c2</th>
+      <th>Value</th>
+      <th>Description</th>
+    </tr>
+    <tr>
+      <tb colspan="3"> -- Permissions -- </tb>
+    </tr>
+    <tr>
+      <tb>0x0001</tb>
+      <tb></tb>
+    </tr>
+    <tr>
+      <tb>0x0002</tb>
+      <tb></tb>
+    </tr>
+    <tr>
+      <tb>0x0004</tb>
+      <tb></tb>
+    </tr>
+    <tr>
+      <tb>0x0008</tb>
+      <tb></tb>
+    </tr>
+    <tr>
+      <tb>0x0010</tb>
+      <tb></tb>
+    </tr>
+    <tr>
+      <tb>0x0020</tb>
+      <tb></tb>
+    </tr>
+    <tr>
+      <tb>0x0040</tb>
+      <tb></tb>
+    </tr>
+    <tr>
+      <tb>0x0080</tb>
+      <tb></tb>
+    </tr>
+    <tr>
+      <tb>0x0100</tb>
+      <tb></tb>
+    </tr>
+    <tr>
+      <tb>0x0200</tb>
+      <tb></tb>
+    </tr>
+    <tr>
+      <tb>0x0400</tb>
+      <tb></tb>
+    </tr>
+    <tr>
+      <tb>0x0800</tb>
+      <tb></tb>
+    </tr>
+    <tr>
+      <tb>0x1000</tb>
+      <tb></tb>
+    </tr>
+    <tr>
+      <tb>0x2000</tb>
+      <tb></tb>
+    </tr>
+    <tr>
+      <tb>0x4000</tb>
+      <tb></tb>
+    </tr>
+    <tr>
+      <tb>0x8000</tb>
+      <tb></tb>
+    </tr>
+    <tr>
+      <tb>0xa000</tb>
+      <tb></tb>
+    </tr>
+    <tr>
+      <tb>0xc000</tb>
+      <tb></tb>
     </tr>
   </tbody>
 </table>
