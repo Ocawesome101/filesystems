@@ -51,7 +51,7 @@ drive.writeSector(5, cfs.inode {
   size = 1024,
   references = 1,
   datablock = 0,
-  filename = "",
+  filename = "/",
   extended_data = ""
 })
 
