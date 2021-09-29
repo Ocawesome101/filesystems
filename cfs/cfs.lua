@@ -121,19 +121,52 @@ function _fsobj:_readBlock(n)
   return data
 end
 
-function _fsobj:_readDataBlock(dblock)
-  local ptrs = {}
+function _fsobj:_readDataBlock(dblock, ptrlist)
+  local ptrs = ptrlist or {}
   for ptr in dblock:gmatch("..") do
-    ptr = string.unpack("<I2", ptr)
-    if ptr == 0 then break end
-    local data = self:_readBlock(ptr)
+    local _ptr = string.unpack("<I2", ptr)
+    if _ptr == 0 then break end
+    if #ptrs == 510 then -- 32-bit pointer
+      _ptr = string.unpack("<I4", dblock:sub(-4))
+      if _ptr > 0 then
+        self:_readDataBlock(self:_readBlock(_ptr), ptrs)
+      end
+    else
+      ptrs[#ptrs+1] = _ptr
+    end
   end
+  return ptrs
 end
 
 function _fsobj:_listDirInode(indat)
   local dblock = self:_readBlock(indat.datablock)
-  local inodes = {}
+  local inodes = self:_readDataBlock(dblock)
   return inodes
+end
+
+local function clean(path)
+  local segs = {}
+  for seg in path:gmatch("[^/]+") do
+    if seg == ".." then
+      segs[#segs] = nil
+    elseif seg ~= "." then
+      segs[#segs+1] = seg
+    end
+  end
+  return segs
+end
+
+function _fsobj:_resolve(path)
+  path = clean(path)
+  local root = self:_readInode(1)
+  local inodes = self:_listDirInode(root)
+end
+
+-- -------------------------------------- --
+-- actual user-level functions begin here --
+-- -------------------------------------- --
+
+function _fsobj:stat(file)
 end
 
 function cfs.new(drive)
