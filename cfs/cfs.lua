@@ -161,7 +161,7 @@ local function clean(path)
 end
 
 local function getftype(fmode)
-  return mode >> 12 << 12
+  return fmode >> 12 << 12
 end
 
 -- path -> inode number, inode data
@@ -180,7 +180,7 @@ function _fsobj:_resolve(path)
       if node.filename == segs[n] then
         if i == #segs then
           return inodes[i], node
-        elseif getftype(node.mode) ~= cfs.modes.directory then
+        elseif getftype(node.mode) ~= cfs.modes.f_directory then
           return nil, table.concat(segs, "/", 1, i) .. ": not a directory"
         else
           inodes = self:_listDirInode(node)
@@ -204,16 +204,19 @@ function _fsobj:stat(file)
   if not n then
     return nil, inode
   end
+  local ftype = getftype(inode.mode)
   return {
-    permissions = inode.mode & 511,
-    setuid = inode.mode & cfs.modes.setuid ~= 0,
-    setgid = inode.mode & cfs.modes.setgid ~= 0,
-    sticky = inode.mode & cfs.moes.sticky ~= 0,
-    blocks = math.ceil(inode.size / 1020),
-    inode = n,
-    size = inode.size
-    type = getftype(inode.mode),
-    links = inode.references,
+    ino = n,
+    mode = inode.mode,
+    nlink = inode.references,
+    uid = inode.uid,
+    gid = inode.gid,
+    size = inode.size,
+    blksize = 1024,
+    blocks = math.ceil(inode.size / 512),
+    atime = inode.access,
+    mtime = inode.modify,
+    ctime = inode.create
   }
 end
 
@@ -241,9 +244,6 @@ function cfs.new(drive)
   --for k, v in pairs(superblock) do if k ~= "padding" then print(k, v) end end
 
   new.fis = superblock
-
-  local rootdir = new:_readInode(1)
-  for k,v in pairs(rootdir) do print(k,v) end
 
   return new
 end
