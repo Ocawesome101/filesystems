@@ -74,29 +74,28 @@ struct Inode {
 If the inode is a regular file, its `datablock` contains 510 pointers to data blocks; the final 4 bytes contain a 32-bit pointer to another block in `datablock` format.  This continues until the first null pointer is encountered.  If an inode is a directory, its `datablock` contains pointers to other inodes rather than to data blocks.  If an inode is a symbolic link *and* the path it references is longer than 152 bytes, its datablock contains the path which the link references.  Otherwise, it is stored in the inode's `extended_data`.  If the inode is a character device, block device, or FIFO, the `extended_data` section contains information about its parameters and the `datablock` pointer will be `0`.
 
 #### File Modes
-These are effectively EXT2's file modes shuffled around a bit.
 | Value  | Description      |
 | ------ | ---------------- |
-| 0x0001 | owner read       |
-| 0x0002 | owner write      |
-| 0x0004 | owner execute    |
-| 0x0008 | group read       |
+| 0x0001 | other execute    |
+| 0x0002 | other write      |
+| 0x0004 | other read       |
+| 0x0008 | group execute    |
 | 0x0010 | group write      |
-| 0x0020 | group execute    |
-| 0x0040 | others read      |
-| 0x0080 | others write     |
-| 0x0100 | others execute   |
-| 0x0200 | setuid bit       |
+| 0x0020 | group read       |
+| 0x0040 | owner execute    |
+| 0x0080 | owner write      |
+| 0x0100 | owner read       |
+| 0x0200 | sticky bit       |
 | 0x0400 | setgid bit       |
-| 0x0800 | sticky bit       |
+| 0x0800 | setuid bit       |
 | | Final 4 bits denote type |
-| 0x1000 | regular file     |
-| 0x2000 | directory        |
-| 0x4000 | character device |
+| 0x1000 | FIFO             |
+| 0x2000 | character device |
+| 0x4000 | directory        |
 | 0x6000 | block device     |
-| 0x8000 | symbolic link    |
-| 0xA000 | socket           |
-| 0xC000 | FIFO             |
+| 0x8000 | regular file     |
+| 0xA000 | symbolic link    |
+| 0xC000 | socket           |
 
 ## Recommended Filesystem Counts
 These counts are not fixed, and may be modified to change the balance of file count to file size.  However, those listed here should be sufficient for most uses.  These should be the defaults for a `mkfs.cfs` utility.

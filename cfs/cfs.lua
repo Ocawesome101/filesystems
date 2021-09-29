@@ -46,24 +46,24 @@ cfs.inode = struct {
 }
 
 cfs.modes = {
-  ownerr = 0x1,
-  ownerw = 0x2,
-  ownerx = 0x4,
-  groupr = 0x8,
+  otherx = 0x1,
+  otherw = 0x2,
+  otherr = 0x4,
+  groupx = 0x8,
   groupw = 0x10,
-  groupx = 0x20,
-  otherr = 0x40,
-  otherw = 0x80,
-  otherx = 0x100,
-  setuid = 0x200,
+  groupr = 0x20,
+  ownerx = 0x40,
+  ownerw = 0x80,
+  ownerr = 0x100,
+  sticky = 0x200,
   setgid = 0x400,
-  sticky = 0x800,
-  f_regular   = 0x1000,
+  setuid = 0x800,
+  f_fifo      = 0x1000,
   f_directory = 0x2000,
-  f_chardev   = 0x6000,
-  f_blkdev    = 0x8000,
+  f_blkdev    = 0x6000,
+  f_regular   = 0x8000,
   f_symlink   = 0xA000,
-  f_fifo      = 0xC000
+  f_socket    = 0xC000
 }
 
 local _fsobj = {}
@@ -144,7 +144,7 @@ function _fsobj:_listDirInode(indat)
   return inodes
 end
 
-local function clean(path)
+local function split(path)
   local segs = {}
   for seg in path:gmatch("[^/]+") do
     if seg == ".." then
@@ -156,10 +156,43 @@ local function clean(path)
   return segs
 end
 
+local function clean(path)
+  return "/" .. table.concat(split(path), "/")
+end
+
+local function getftype(fmode)
+  return mode >> 12 << 12
+end
+
+-- path -> inode number, inode data
 function _fsobj:_resolve(path)
   path = clean(path)
   local root = self:_readInode(1)
+  if path == "/" then
+    return 1, root
+  end
+  local segs = split(path)
   local inodes = self:_listDirInode(root)
+  for i=1, #segs, 1 do
+    local resolved = false
+    for i=1, #inodes, 1 do
+      local node = self:_readInode(inodes[i])
+      if node.filename == segs[n] then
+        if i == #segs then
+          return inodes[i], node
+        elseif getftype(node.mode) ~= cfs.modes.directory then
+          return nil, table.concat(segs, "/", 1, i) .. ": not a directory"
+        else
+          inodes = self:_listDirInode(node)
+          resolved = true
+          break
+        end
+      end
+    end
+    if not resolved then
+      return nil, "no such file or directory"
+    end
+  end
 end
 
 -- -------------------------------------- --
@@ -167,6 +200,29 @@ end
 -- -------------------------------------- --
 
 function _fsobj:stat(file)
+  local n, inode = self:_resolve(file)
+  if not n then
+    return nil, inode
+  end
+  return {
+    permissions = inode.mode & 511,
+    setuid = inode.mode & cfs.modes.setuid ~= 0,
+    setgid = inode.mode & cfs.modes.setgid ~= 0,
+    sticky = inode.mode & cfs.moes.sticky ~= 0,
+    blocks = math.ceil(inode.size / 1020),
+    inode = n,
+    size = inode.size
+    type = getftype(inode.mode),
+    links = inode.references,
+  }
+end
+
+function _fsobj:mkdir(path)
+  local segm = split(path)
+  local n, inode = self:_resolve(table.concat(segm, "/", 1, #segm - 1))
+  if not n then
+    return nil, inode
+  end
 end
 
 function cfs.new(drive)
