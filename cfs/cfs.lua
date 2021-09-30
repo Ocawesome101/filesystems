@@ -17,8 +17,10 @@ TODO:
   - [ ] Directory blocks?
 
 --]]
+
 local INODEBMP = 3
 local BLOCKBMP = 4
+local MAX_READ = 1020
 
 local _ = require("struct")
 local struct = _.struct
@@ -402,7 +404,60 @@ function _fsobj:mkdir(path, mode)
   return self:_createFile(path, mode)
 end
 
-function _fsobj:open(path, flags)
+local fds = {}
+function _fsobj:open(path, flags, mode)
+  checkArg(1, path, "string")
+  checkArg(2, flags, "table")
+  if flags.creat then
+    checkArg(3, mode, "number")
+    mode = mode & 0x0fff
+    local ok, err = self:_createFile(path, mode | cfs.modes.f_regular)
+    if flags.excl and not ok then
+      return nil, err
+    end
+  end
+  local n, inode = self:_resolve(path)
+  if not n then end
+  local fd = #fds+1
+  fds[fd] = {
+    inode = inode,
+    ptr = 0,
+    inblock = 0,
+    dblocks = {inode.datablock}
+  }
+  return fd
+end
+
+function _fsobj:read(fd, n)
+  checkArg(1, fd, "number")
+  checkArg(2, n, "number")
+  if not fds[fd] then
+    return nil, "bad file descriptor"
+  end
+  
+  local fd = fds[fd]
+  if fd.ptr == fd.inode.size then
+    return nil
+  end
+  
+  n = math.min(MAX_READ, n, fd.inode.size - fd.ptr)
+  local sblock = fd.ptr % 1020
+  local rdata = ""
+  
+  while n > 0 do
+    local blkdata = self:_readBlock(fd.dblocks[sblock])
+    local ndata = blkdata:sub(1, math.min(n, 1020))
+    rdata = rdata .. ndata
+    fd.intoblock = fd.intoblock + #ndata
+    n = n - #ndata
+    local nblkptr = string.unpack("<I4", blkdata:sub(-4))
+    if nblkptr ~= 0 and n > 0 then
+      fd.intoblock = 0
+      fd.dblocks[#fd.dblocks + 1] = nblkptr
+    end
+  end
+
+  return rdata
 end
 
 function cfs.new(drive)
