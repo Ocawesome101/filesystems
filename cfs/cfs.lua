@@ -439,7 +439,6 @@ function _fsobj:open(path, flags, mode)
     intoblock = 0,
   }
   if flags.wronly and not flags.trunc then
-    print("NO TRUNCATE")
     fds[fd].ptr = fds[fd].inode.size
     fds[fd].intoblock = fds[fd].inode.size % 1020
   end
@@ -462,14 +461,12 @@ function _fsobj:read(fd, n)
   
   n = math.min(MAX_READ, n, fd.inode.size - fd.ptr + 1)
   local sblock = math.ceil(fd.ptr / 1020) + 1
-  print("reading", n, "from block", sblock, fd.dblocks[sblock])
   local rdata = ""
  
   while n > 0 and fd.dblocks[sblock] do
     local blkdata = self:_readBlock(fd.dblocks[sblock])
     local ndata = blkdata:sub(fd.intoblock,
       fd.intoblock + math.min(n, 1020) - 1)
-    print("has read", ndata, #ndata)
     
     rdata = rdata .. ndata
     fd.intoblock = fd.intoblock + #ndata
@@ -526,7 +523,6 @@ function _fsobj:write(fd, data)
   
   while #data > 0 do
     local chunk = data:sub(1, 1020 - fd.intoblock)
-    print("writing", chunk, "at offset", fd.intoblock, "block", fd.dblocks[sblock])
     fd.inode.size = fd.inode.size + #chunk
     
     data = data:sub(#chunk + 1)
@@ -535,9 +531,9 @@ function _fsobj:write(fd, data)
     local blk = self:_readBlock(fd.dblocks[sblock])
     if #chunk < 1020 then
       chunk = blk:sub(0, fd.intoblock - #chunk) .. chunk
-        .. blk:sub(fd.intoblock + 1)
+        .. blk:sub(fd.intoblock + 1, 1020)
     end
-    chunk = chunk:sub(1, -4) .. string.pack("<I4", fd.dblocks[sblock + 1] or 0)
+    chunk = chunk .. string.pack("<I4", fd.dblocks[sblock + 1] or 0)
     
     self:_writeBlock(fd.dblocks[sblock], chunk)
     

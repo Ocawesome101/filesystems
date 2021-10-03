@@ -36,6 +36,6 @@ print("read from /bin/test")
 local fd = assert(node:open("/bin/test", {rdonly = true}))
 repeat
   local data = node:read(fd, math.huge)
-  print("read line:", data)
+  io.write(data or "")
 until not data
 print("close", node:close(fd))
