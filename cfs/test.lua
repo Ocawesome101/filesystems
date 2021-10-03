@@ -8,7 +8,7 @@ print "stat /"
 for k, v in pairs(root) do print(k,v) end
 
 print "create /bin"
-print(node:_createFile("/bin", cfs.modes.f_directory))
+print(node:mkdir("/bin", cfs.modes.f_directory))
 local bin = node:stat "/bin"
 if not bin then
   print("ERROR: /bin NOT CREATED")
