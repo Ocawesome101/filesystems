@@ -408,6 +408,7 @@ local fds = {}
 function _fsobj:open(path, flags, mode)
   checkArg(1, path, "string")
   checkArg(2, flags, "table")
+  
   if flags.creat then
     checkArg(3, mode, "number")
     mode = mode & 0x0fff
@@ -416,8 +417,10 @@ function _fsobj:open(path, flags, mode)
       return nil, err
     end
   end
+  
   local n, inode = self:_resolve(path)
   if not n then end
+  
   local fd = #fds+1
   fds[fd] = {
     inode = inode,
@@ -441,23 +444,76 @@ function _fsobj:read(fd, n)
   end
   
   n = math.min(MAX_READ, n, fd.inode.size - fd.ptr)
-  local sblock = fd.ptr % 1020
+  local sblock = math.ceil(fd.ptr / 1020)
   local rdata = ""
-  
+ 
   while n > 0 do
     local blkdata = self:_readBlock(fd.dblocks[sblock])
-    local ndata = blkdata:sub(1, math.min(n, 1020))
+    local ndata = blkdata:sub(fd.intoblock, math.min(n, 1020))
+    
     rdata = rdata .. ndata
     fd.intoblock = fd.intoblock + #ndata
     n = n - #ndata
+
     local nblkptr = string.unpack("<I4", blkdata:sub(-4))
     if nblkptr ~= 0 and n > 0 then
       fd.intoblock = 0
-      fd.dblocks[#fd.dblocks + 1] = nblkptr
+      if sblock == #fd.dblocks then
+        fd.dblocks[#fd.dblocks + 1] = nblkptr
+      end
+      sblock = sblock + 1
     end
   end
 
+  fd.ptr = fd.ptr + #rdata
+
   return rdata
+end
+
+function _fsobj:seek(fd, whence, offset)
+  checkArg(1, fd, "number")
+  checkArg(2, whence, "string")
+  checkArg(3, offset, "number")
+  
+  fd = fds[fd]
+  if not fd then
+    return nil, "bad file descriptor"
+  end
+
+  if whence == "cur" then
+    fd.ptr = math.max(0, math.min(fd.inode.size, fd.ptr + offset))
+  elseif whence == "set" then
+    fd.ptr = math.max(0, math.min(fd.inode.size, offset))
+  elseif whence == "end" then
+    fd.ptr = math.max(0, math.min(fd.inode.size, fd.inode.size + offset))
+  else
+    error "bad value for 'whence' - expected one of ('set', 'cur', 'end')"
+  end
+
+  return true
+end
+
+function _fsobj:write(fd, data)
+  checkArg(1, fd, "number")
+  checkArg(2, data, "string")
+
+  fd = fds[fd]
+  if not fd then
+    return nil, "bad file descriptor"
+  end
+
+  local sblock = math.ceil(fd.ptr / 1020)
+end
+
+function _fsobj:close(fd)
+  checkArg(1, fd, "number")
+  
+  if not fds[fd] then
+    return nil, "bad file descriptor"
+  end
+  
+  fds[fd] = nil
+  return true
 end
 
 function cfs.new(drive)

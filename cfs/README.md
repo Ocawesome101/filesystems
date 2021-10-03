@@ -71,9 +71,9 @@ struct Inode {
 }
 ```
 
-If the inode is a regular file, its `datablock` contains 1020 bytes of data, followed by a 32-bit pointer to the next data block;  this pattern continues for as long as necessary.  This continues until the first null pointer is encountered.
+If the inode is a regular file, its `datablock` contains 510 pointers to data blocks, followed by a 32-bit pointer to the next secondary block;  this pattern continues for as long as necessary.  This continues until the first null pointer is encountered.
 
-If the inode is a directory, its `datablock` contains 510 pointers to other inodes, then a 32-bit pointer to another block of pointers.  This pattern continues for as long as necessary.
+If the inode is a directory, its `datablock` contains 510 pointers to other inodes, then a 32-bit pointer to another block of pointers.  This pattern continues for as long as necessary, until the first null pointer is encountered.
 
 If the inode is a symbolic link *and* the path it references is longer than 152 bytes, its datablock contains the path which the link references.  Otherwise, it is stored in the inode's `extended_data`.  If the inode is a character device, block device, or FIFO, the `extended_data` section contains information about its parameters and the `datablock` pointer will be `0`.
 
