@@ -14,7 +14,14 @@ TODO:
  [ ] Caching for:
   - [ ] Path resolutions
   - [ ] Inodes
-  - [ ] Directory blocks?
+  - [ ] Bitmaps
+  - [ ] Secondary data blocks?
+ [ ] This driver currently has a hard limit of
+     4096 inodes and 4096 blocks.  This means it
+     can't take advantage of anything over about
+     4MB and will in fact break if either the
+     inode or block bitmap is over a sector in
+     size.
 
 --]]
 
@@ -338,7 +345,7 @@ function _fsobj:_createFile(path, mode, link)
   local dirptrlist, blk = self:_listDataBlock(inode.datablock)
   dirptrlist[#dirptrlist + 1] = new_inode
   
-  self:_saveDataBlock(inode.datablock, dirptrlist, blk)
+  self:_saveDataBlocks(inode.datablock, dirptrlist, blk)
   
   inode.modify = os.time()
   self:_writeInode(n, inode)
@@ -425,9 +432,11 @@ function _fsobj:open(path, flags, mode)
   fds[fd] = {
     inode = inode,
     ptr = 0,
-    inblock = 0,
-    dblocks = {}
+    intoblock = 0,
+    dblocks = {},
+    blk = {}
   }
+  fds[fd].dblocks, fds[fd].blk = self:_readDataBlock(inode.datablock)
   return fd
 end
 
@@ -447,7 +456,7 @@ function _fsobj:read(fd, n)
   local sblock = math.ceil(fd.ptr / 1020)
   local rdata = ""
  
-  while n > 0 do
+  while n > 0 and fd.dblocks[sblock] do
     local blkdata = self:_readBlock(fd.dblocks[sblock])
     local ndata = blkdata:sub(fd.intoblock, math.min(n, 1020))
     
@@ -455,12 +464,8 @@ function _fsobj:read(fd, n)
     fd.intoblock = fd.intoblock + #ndata
     n = n - #ndata
 
-    local nblkptr = string.unpack("<I4", blkdata:sub(-4))
-    if nblkptr ~= 0 and n > 0 then
+    if n > 0 then
       fd.intoblock = 0
-      if sblock == #fd.dblocks then
-        fd.dblocks[#fd.dblocks + 1] = nblkptr
-      end
       sblock = sblock + 1
     end
   end
@@ -503,6 +508,27 @@ function _fsobj:write(fd, data)
   end
 
   local sblock = math.ceil(fd.ptr / 1020)
+  while #data > 0 do
+    local chunk = data:sub(1, 1020 - fd.intoblock)
+    if #chunk < 1020 then
+      chunk = self:_readBlock(fd.dblocks[sblock]):sub(0, fd.intoblock)
+    end
+    
+    self:_writeBlock(fd.dblocks[sblock], chunk)
+    
+    data = data:sub(#chunk + 1)
+    fd.intoblock = fd.intoblock + #chunk
+    
+    if fd.intoblock >= 1020 then
+      fd.intoblock = 0
+      sblock = sblock + 1
+      if not fd.dblocks[sblk] then
+        fd.dblocks[#fd.dblocks + 1] = self:_allocateBlock()
+      end
+    end
+  end
+
+  return true
 end
 
 function _fsobj:close(fd)
@@ -512,6 +538,7 @@ function _fsobj:close(fd)
     return nil, "bad file descriptor"
   end
   
+  self:_saveDataBlocks(fds[fd].inode.datablock, fds[fd].dblocks, fds[fd].blk)
   fds[fd] = nil
   return true
 end
