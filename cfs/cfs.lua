@@ -187,6 +187,7 @@ end
 
 -- blocks are 0-indexed
 function _fsobj:_readBlock(n)
+  checkArg(1, n, "number")
   -- check if the block is allocated
   if self:_readFromBitmap(BLOCKBMP, n) == 0 then
     return nil
@@ -369,7 +370,7 @@ function _fsobj:_createFile(path, mode, link)
     indata.size = #link
     indata.extended_data = link
   else
-    indata.size = 1024
+    indata.size = 0
     indata.datablock = self:_allocateBlock()
   end
   
@@ -426,39 +427,49 @@ function _fsobj:open(path, flags, mode)
   end
   
   local n, inode = self:_resolve(path)
-  if not n then end
+  if not n then
+    return nil, inode
+  end
   
   local fd = #fds+1
   fds[fd] = {
+    inoden = n,
     inode = inode,
     ptr = 0,
     intoblock = 0,
-    dblocks = {},
-    blk = {}
   }
-  fds[fd].dblocks, fds[fd].blk = self:_readDataBlock(inode.datablock)
+  if flags.wronly and not flags.trunc then
+    print("NO TRUNCATE")
+    fds[fd].ptr = fds[fd].inode.size
+    fds[fd].intoblock = fds[fd].inode.size % 1020
+  end
+  fds[fd].dblocks, fds[fd].blk = self:_listDataBlock(inode.datablock)
   return fd
 end
 
 function _fsobj:read(fd, n)
   checkArg(1, fd, "number")
   checkArg(2, n, "number")
+  
   if not fds[fd] then
     return nil, "bad file descriptor"
   end
   
   local fd = fds[fd]
-  if fd.ptr == fd.inode.size then
+  if fd.ptr + 1 >= fd.inode.size then
     return nil
   end
   
-  n = math.min(MAX_READ, n, fd.inode.size - fd.ptr)
-  local sblock = math.ceil(fd.ptr / 1020)
+  n = math.min(MAX_READ, n, fd.inode.size - fd.ptr + 1)
+  local sblock = math.ceil(fd.ptr / 1020) + 1
+  print("reading", n, "from block", sblock, fd.dblocks[sblock])
   local rdata = ""
  
   while n > 0 and fd.dblocks[sblock] do
     local blkdata = self:_readBlock(fd.dblocks[sblock])
-    local ndata = blkdata:sub(fd.intoblock, math.min(n, 1020))
+    local ndata = blkdata:sub(fd.intoblock,
+      fd.intoblock + math.min(n, 1020) - 1)
+    print("has read", ndata, #ndata)
     
     rdata = rdata .. ndata
     fd.intoblock = fd.intoblock + #ndata
@@ -508,22 +519,33 @@ function _fsobj:write(fd, data)
   end
 
   local sblock = math.ceil(fd.ptr / 1020)
+  if sblock == 0 then sblock = 1 end
+  if not fd.dblocks[sblock] then
+    fd.dblocks[sblock] = self:_allocateBlock()
+  end
+  
   while #data > 0 do
     local chunk = data:sub(1, 1020 - fd.intoblock)
-    if #chunk < 1020 then
-      chunk = self:_readBlock(fd.dblocks[sblock]):sub(0, fd.intoblock)
-    end
-    
-    self:_writeBlock(fd.dblocks[sblock], chunk)
+    print("writing", chunk, "at offset", fd.intoblock, "block", fd.dblocks[sblock])
+    fd.inode.size = fd.inode.size + #chunk
     
     data = data:sub(#chunk + 1)
     fd.intoblock = fd.intoblock + #chunk
     
+    local blk = self:_readBlock(fd.dblocks[sblock])
+    if #chunk < 1020 then
+      chunk = blk:sub(0, fd.intoblock - #chunk) .. chunk
+        .. blk:sub(fd.intoblock + 1)
+    end
+    chunk = chunk:sub(1, -4) .. string.pack("<I4", fd.dblocks[sblock + 1] or 0)
+    
+    self:_writeBlock(fd.dblocks[sblock], chunk)
+    
     if fd.intoblock >= 1020 then
       fd.intoblock = 0
       sblock = sblock + 1
-      if not fd.dblocks[sblk] then
-        fd.dblocks[#fd.dblocks + 1] = self:_allocateBlock()
+      if not fd.dblocks[sblock] then
+        fd.dblocks[sblock] = self:_allocateBlock()
       end
     end
   end
@@ -539,6 +561,7 @@ function _fsobj:close(fd)
   end
   
   self:_saveDataBlocks(fds[fd].inode.datablock, fds[fd].dblocks, fds[fd].blk)
+  self:_writeInode(fds[fd].inoden, fds[fd].inode)
   fds[fd] = nil
   return true
 end

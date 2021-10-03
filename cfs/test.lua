@@ -18,3 +18,24 @@ else
     print(k,v)
   end
 end
+
+print("create /bin/test")
+local fd = assert(node:open("/bin/test", {wronly = true, creat = true,
+  trunc = false},
+  cfs.modes.f_regular | cfs.modes.ownerr | cfs.modes.ownerw))
+print("write", node:write(fd, "this is a test\n"))
+print("close", node:close(fd))
+
+print "stat /bin/test"
+local test = assert(node:stat("/bin/test"))
+for k,v in pairs(test) do
+  print(k,v)
+end
+
+print("read from /bin/test")
+local fd = assert(node:open("/bin/test", {rdonly = true}))
+repeat
+  local data = node:read(fd, math.huge)
+  print("read line:", data)
+until not data
+print("close", node:close(fd))
