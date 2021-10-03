@@ -228,19 +228,19 @@ function _fsobj:_readDataBlock(dblock, ptrlist, blklist)
 end
 
 -- get all children of a directory inode
-function _fsobj:_listDirInode(indat)
-  local dblock = self:_readBlock(indat.datablock)
+function _fsobj:_listDataBlock(idb)
+  local dblock = self:_readBlock(idb)
   local inodes, blocks = self:_readDataBlock(dblock)
-  table.insert(blocks, 1, indat.datablock)
+  table.insert(blocks, 1, idb)
   return inodes, blocks
 end
 
-function _fsobj:_saveDirInode(indat, ptrs, blocks)
+function _fsobj:_saveDataBlocks(begin, ptrs, blocks)
   local saved = 0
   local blkidx = 0
   local blkdata = ""
-  if blocks[1] ~= indat.datablock then
-    table.insert(blocks, 1, indat.datablock)
+  if blocks[1] ~= begin then
+    table.insert(blocks, 1, begin)
   end
   for i=1, #ptrs, 1 do
     saved = saved + 1
@@ -295,7 +295,7 @@ function _fsobj:_resolve(path)
     return 1, root
   end
   local segs = split(path)
-  local inodes = self:_listDirInode(root)
+  local inodes = self:_listDataBlock(root.datablock)
   for n=1, #segs, 1 do
     local resolved = false
     for i=1, #inodes, 1 do
@@ -306,7 +306,7 @@ function _fsobj:_resolve(path)
         elseif getftype(node.mode) ~= cfs.modes.f_directory then
           return nil, table.concat(segs, "/", 1, i) .. ": not a directory"
         else
-          inodes = self:_listDirInode(node)
+          inodes = self:_listDataBlock(node.datablock)
           resolved = true
           break
         end
@@ -335,10 +335,10 @@ function _fsobj:_createFile(path, mode, link)
   end
   
   local new_inode = self:_allocateInode(mode)
-  local dirptrlist, blk = self:_listDirInode(inode)
+  local dirptrlist, blk = self:_listDataBlock(inode.datablock)
   dirptrlist[#dirptrlist + 1] = new_inode
   
-  self:_saveDirInode(inode, dirptrlist, blk)
+  self:_saveDataBlock(inode.datablock, dirptrlist, blk)
   
   inode.modify = os.time()
   self:_writeInode(n, inode)
@@ -426,7 +426,7 @@ function _fsobj:open(path, flags, mode)
     inode = inode,
     ptr = 0,
     inblock = 0,
-    dblocks = {inode.datablock}
+    dblocks = {}
   }
   return fd
 end

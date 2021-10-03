@@ -3,6 +3,7 @@
 
 print("mkfs.cfs (c) 2021 Ocawesome101")
 
+package.loaded.cfs = nil
 local cfs = require("cfs")
 local drive = require("component").drive
 
