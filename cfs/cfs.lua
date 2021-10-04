@@ -342,39 +342,45 @@ function _fsobj:_createFile(path, mode, link)
     return nil, "/"..table.concat(segm, "/", 1, #segm - 1)..": not a directory"
   end
   
-  local new_inode = self:_allocateInode(mode)
-  local dirptrlist, blk = self:_listDataBlock(inode.datablock)
-  dirptrlist[#dirptrlist + 1] = new_inode
-  
-  self:_saveDataBlocks(inode.datablock, dirptrlist, blk)
-  
-  inode.modify = os.time()
-  self:_writeInode(n, inode)
-  
-  local indata = {
-    mode = mode,
-    uid = 0,
-    gid = 0,
-    access = os.time(),
-    create = os.time(),
-    modify = os.time(),
-    size = 0,
-    references = 1,
-    datablock = 0,
-    filename = segm[#segm],
-    extended_data = ""
-  }
-  
-  local ftype = getftype(mode)
-  if ftype == cfs.modes.f_symlink then
-    indata.size = #link
-    indata.extended_data = link
+  if mode == 0xFFFF then -- hard link
+    local dirptrlist, blk = self:_listDataBlock(inode.datablock)
+    dirptrlist[#dirptrlist+1] = link
+    self:_saveDataBlocks(inode.datablock, dirptrlist, blk)
   else
-    indata.size = 0
-    indata.datablock = self:_allocateBlock()
-  end
+    local new_inode = self:_allocateInode(mode)
+    local dirptrlist, blk = self:_listDataBlock(inode.datablock)
+    dirptrlist[#dirptrlist + 1] = new_inode
   
-  self:_writeInode(new_inode, indata)
+    self:_saveDataBlocks(inode.datablock, dirptrlist, blk)
+  
+    inode.modify = os.time()
+    self:_writeInode(n, inode)
+  
+    local indata = {
+      mode = mode,
+      uid = 0,
+      gid = 0,
+      access = os.time(),
+      create = os.time(),
+      modify = os.time(),
+      size = 0,
+      references = 1,
+      datablock = 0,
+      filename = segm[#segm],
+      extended_data = ""
+    }
+  
+    local ftype = getftype(mode)
+    if ftype == cfs.modes.f_symlink then
+      indata.size = #link
+      indata.extended_data = link
+    else
+      indata.size = 0
+      indata.datablock = self:_allocateBlock()
+    end
+  
+    self:_writeInode(new_inode, indata)
+  end
   return true
 end
 
@@ -413,6 +419,52 @@ function _fsobj:mkdir(path, mode)
   mode = mode | cfs.modes.f_directory
   return self:_createFile(path, mode)
 end
+
+function _fsobj:link(old, new)
+  checkArg(1, old, "string")
+  checkArg(2, new, "string")
+
+  local on, oinode = self:_resolve(old)
+  if not on then
+    return nil, oinode
+  end
+
+  local ok, err = self:_createFile(new, 0xFFFF, on)
+  if not ok then
+    return nil, err
+  end
+
+  return true
+end
+
+function _fsobj:unlink(path)
+  checkArg(1, path, "string")
+  
+  local n, inode = self:_resolve(path)
+  if not n then
+    return nil, inode
+  end
+
+  local segm = split(path)
+  local pn, parent = self:_resolve("/" .. table.concat(segm, "/", 1, #segm - 1))
+  if not pn, parent then
+    return nil, parent
+  end
+
+  local dirptrlist, blk = self:_listDataBlock(parent.datablock)
+  for i=1, #dirptrlist, 1 do
+    if dirptrlist[i] == n then
+      table.remove(dirptrlist, i)
+      inode.links = inode.links - 1
+      self:_writeInode(n, inode)
+      return true
+    end
+  end
+
+  return nil, "unknown error"
+end
+
+----==== File I/O ====----
 
 local fds = {}
 function _fsobj:open(path, flags, mode)
