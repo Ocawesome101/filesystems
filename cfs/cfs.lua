@@ -464,6 +464,33 @@ function _fsobj:unlink(path)
   return nil, "unknown error"
 end
 
+function _fsobj:list(path)
+  checkArg(1, path, "string")
+  
+  local n, inode = self:_resolve(path)
+  if not n then
+    return nil, err
+  end
+
+  if getftype(inode.mode) ~= cfs.modes.f_directory then
+    return nil, "not a directory"
+  end
+
+  local ptrlist = self:_listDataBlock(inode.datablock)
+  local flist = {}
+
+  for i, ptr in ipairs(ptrlist) do
+    local indat, err = self:_readInode(ptr)
+    if not indat then
+      return nil, err
+    end
+
+    flist[#flist+1] = indat.filename
+  end
+
+  return flist
+end
+
 ----==== File I/O ====----
 
 local fds = {}
