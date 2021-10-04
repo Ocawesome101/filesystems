@@ -235,18 +235,18 @@ end
 
 function _fsobj:_readDataBlock(dblock, ptrlist, blklist)
   local ptrs, blocks = ptrlist or {}, blklist or {}
-  for ptr in dblock:gmatch("..") do
+  local begin_n = #ptrs
+  for i=1, #dblock - 4, 2 do
+    local ptr = dblock:sub(i, i+1)
     local _ptr = string.unpack("<I2", ptr)
     if _ptr == 0 then break end
-    if #ptrs == 510 then -- 32-bit pointer
-      _ptr = string.unpack("<I4", dblock:sub(-4))
-      if _ptr > 0 then
-        blocks[#blocks+1] = _ptr
-        self:_readDataBlock(self:_readBlock(_ptr), ptrs, blocks)
-      end
-      break
-    else
-      ptrs[#ptrs+1] = _ptr
+    ptrs[#ptrs+1] = _ptr
+  end
+  if #ptrs - begin_n == 510 then -- 32-bit pointer
+    local _ptr = string.unpack("<I4", dblock:sub(-4))
+    if _ptr > 0 then
+      blocks[#blocks+1] = _ptr
+      self:_readDataBlock(self:_readBlock(_ptr), ptrs, blocks)
     end
   end
   return ptrs, blocks
@@ -268,26 +268,29 @@ function _fsobj:_saveDataBlocks(begin, ptrs, blocks)
     table.insert(blocks, 1, begin)
   end
   for i=1, #ptrs, 1 do
-    saved = saved + 1
-    if saved == 511 then
-      saved = 0
-      blkidx = blkidx + 1
-      if not blocks[blkidx] then
-        blocks[blkidx] = self:_allocateBlock()
-      end
-      blkdata = blkdata .. string.pack("<I4", blocks[blkidx])
-      self:_writeBlock(blocks[blkidx], blkdata)
-      blkdata = ""
-    else
-      blkdata = blkdata .. string.pack("<I2", ptrs[i])
-    end
+    blkdata = blkdata .. string.pack("<I2", ptrs[i])
   end
-  if #blkdata > 0 then
+  for i=1, #blkdata, 1020 do
     blkidx = blkidx + 1
-    if not blocks[blkidx] then
-      blocks[blkidx] = self:_allocateBlock()
+    local chunk = blkdata:sub(i, i - 1 + 1020)
+    chunk = chunk .. ("\0"):rep(1020 - #chunk)
+    if i >= #blkdata - 1020 then
+      if blocks[blkidx + 1] then
+        -- free unused blocks
+        local free = {}
+        for n=blkidx+1, #blocks, 1 do
+          free[#free+1] = blocks[n]
+        end
+        self:_freeBlocks(free)
+      end
+      blocks[blkidx + 1] = 0
+    else
+      if not blocks[blkidx + 1] then
+        blocks[blkidx + 1] = self:_allocateBlock()
+      end
     end
-    self:_writeBlock(blocks[blkidx], blkdata)
+    chunk = chunk .. ("<I4"):pack(blocks[blkidx + 1])
+    self:_writeBlock(blocks[blkidx], chunk)
   end
   return true
 end
@@ -367,6 +370,7 @@ function _fsobj:_createFile(path, mode, link)
     local new_inode = self:_allocateInode(mode)
     local dirptrlist, blk = self:_listDataBlock(inode.datablock)
     dirptrlist[#dirptrlist + 1] = new_inode
+    print("INSERT", new_inode)
   
     self:_saveDataBlocks(inode.datablock, dirptrlist, blk)
   
@@ -555,7 +559,6 @@ function _fsobj:list(path)
   local flist = {}
 
   for i, ptr in ipairs(ptrlist) do
-    print("LS", i, ptr)
     local indat, err = self:_readInode(ptr)
     if not indat then
       return nil, err
