@@ -447,7 +447,7 @@ function _fsobj:unlink(path)
 
   local segm = split(path)
   local pn, parent = self:_resolve("/" .. table.concat(segm, "/", 1, #segm - 1))
-  if not pn, parent then
+  if not pn then
     return nil, parent
   end
 
