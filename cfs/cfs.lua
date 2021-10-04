@@ -309,7 +309,7 @@ function _fsobj:_resolve(path)
     for i=1, #inodes, 1 do
       local node = self:_readInode(inodes[i])
       if node.filename == segs[n] then
-        if i == #segs then
+        if n == #segs then
           return inodes[i], node
         elseif getftype(node.mode) ~= cfs.modes.f_directory then
           return nil, table.concat(segs, "/", 1, i) .. ": not a directory"
