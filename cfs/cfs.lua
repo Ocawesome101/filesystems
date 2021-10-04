@@ -598,10 +598,12 @@ function _fsobj:open(path, flags, mode)
     ptr = 0,
     intoblock = 0,
   }
+  
   if flags.wronly and not flags.trunc then
     fds[fd].ptr = fds[fd].inode.size
     fds[fd].intoblock = fds[fd].inode.size % 1020
   end
+  
   fds[fd].dblocks, fds[fd].blk = self:_listDataBlock(inode.datablock)
   return fd
 end

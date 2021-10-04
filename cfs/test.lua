@@ -5,10 +5,10 @@ local sd = 0
 local node = cfs.new(require("component").drive)
 
 local root = node:stat("/")
-
+--[[
 print "stat /"
 for k, v in pairs(root) do print(k,v) end
-
+]]
 print "create /bin"
 print(node:mkdir("/bin", cfs.modes.f_directory))
 
@@ -20,17 +20,17 @@ if not bin then
 else
   print "stat /bin"
   for k,v in pairs(bin) do
-    print(k,v)
+ --   print(k,v)
   end
 end
-
+--[[
 os.sleep(sd)
 
 print("list /")
 print(table.concat(assert(node:list("/")), " "))
 
 os.sleep(sd)
-
+]]
 print("create /bin/test")
 local fd = assert(node:open("/bin/test", {wronly = true, creat = true,
   trunc = false},
