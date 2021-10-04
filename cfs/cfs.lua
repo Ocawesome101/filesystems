@@ -270,6 +270,7 @@ function _fsobj:_saveDataBlocks(begin, ptrs, blocks)
   for i=1, #ptrs, 1 do
     blkdata = blkdata .. string.pack("<I2", ptrs[i])
   end
+  if #blkdata == 0 then blkdata = "\0\0" end
   for i=1, #blkdata, 1020 do
     blkidx = blkidx + 1
     local chunk = blkdata:sub(i, i - 1 + 1020)
@@ -370,7 +371,6 @@ function _fsobj:_createFile(path, mode, link)
     local new_inode = self:_allocateInode(mode)
     local dirptrlist, blk = self:_listDataBlock(inode.datablock)
     dirptrlist[#dirptrlist + 1] = new_inode
-    print("INSERT", new_inode)
   
     self:_saveDataBlocks(inode.datablock, dirptrlist, blk)
   
@@ -484,7 +484,7 @@ function _fsobj:unlink(path)
   for i=1, #dirptrlist, 1 do
     if dirptrlist[i] == n then
       table.remove(dirptrlist, i)
-      
+
       inode.references = math.max(0, inode.references - 1)
       
       if inode.references == 0 then
@@ -538,7 +538,7 @@ function _fsobj:rmdir(path)
       table.remove(pdpt, i)
     end
   end
-  self:_saveDataBlocks(pdpt, pdbl)
+  self:_saveDataBlocks(parent.datablock, pdpt, pdbl)
 
   return true
 end
