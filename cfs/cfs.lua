@@ -165,6 +165,7 @@ function _fsobj:_readInode(n)
 
   local data = cfs.inode(_data)
   data.filename = data.filename:gsub("\0", "")
+  print("MODE " .. n .. ": " .. data.mode)
   return data
 end
 
@@ -292,7 +293,7 @@ local function clean(path)
 end
 
 local function getftype(fmode)
-  return fmode >> 12 << 12
+  return fmode & 0xf000
 end
 
 -- path -> inode number, inode data
@@ -308,10 +309,8 @@ function _fsobj:_resolve(path)
     local resolved = false
     for i=1, #inodes, 1 do
       local node = self:_readInode(inodes[i])
-      print(node.filename, node.mode, segs[n])
       if node.filename == segs[n] then
         if i == #segs then
-          print("returning")
           return inodes[i], node
         elseif getftype(node.mode) ~= cfs.modes.f_directory then
           return nil, table.concat(segs, "/", 1, i) .. ": not a directory"
@@ -351,7 +350,6 @@ function _fsobj:_createFile(path, mode, link)
   self:_saveDataBlocks(inode.datablock, dirptrlist, blk)
   
   inode.modify = os.time()
-  print(inode.mode)
   self:_writeInode(n, inode)
   
   local indata = {
@@ -433,7 +431,7 @@ function _fsobj:open(path, flags, mode)
   
   local n, inode = self:_resolve(path)
   if not n then
-    return nil, node
+    return nil, inode
   end
   
   local fd = #fds+1
