@@ -39,3 +39,16 @@ repeat
   io.write(data or "")
 until not data
 print("close", node:close(fd))
+
+print("list /bin")
+print(table.concat(assert(node:list("/bin")), " "))
+
+print("rmdir /bin")
+print(node:rmdir("/bin"))
+
+print("unlink /bin/test")
+print(node:unlink("/bin/test"))
+
+print("rmdir /bin")
+print(node:rmdir("/bin"))
+

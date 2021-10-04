@@ -10,6 +10,7 @@
     ]]--
 
 --[[
+
 TODO:
  [ ] Caching for:
   - [ ] Path resolutions
@@ -22,6 +23,8 @@ TODO:
      4MB and will in fact break if either the
      inode or block bitmap is over a sector in
      size.
+ [ ] Free blocks when a file or directory shrinks
+     to the point where it is no longer used.
 
 --]]
 
@@ -147,6 +150,20 @@ function _fsobj:_allocateBlock()
   self:_writeToBitmap(BLOCKBMP, self.fis.used_blocks, true)
   self.drive.writeSector(2, cfs.superblock(self.fis))
   return self.fis.used_blocks
+end
+
+function _fsobj:_freeInode(n)
+  self.fis.used_inodes = self.fis.used_inodes - 1
+  self:_writeToBitmap(INODEBMP, n, false)
+  self.drive.writeSector(2, cfs.superblock(self.fis))
+end
+
+function _fsobj:_freeBlocks(blks)
+  self.fis.used_blocks = math.max(1, self.fis.used_blocks - #blks)
+  for i=1, #blks, 1 do
+    self:_writeToBitmap(BLOCKBMP, blks[i], false)
+  end
+  self.drive.writeSector(2, cfs.superblock(self.fis))
 end
 
 -- inodes are 1-indexed
@@ -429,6 +446,10 @@ function _fsobj:link(old, new)
     return nil, oinode
   end
 
+  if getftype(oinode.mode) == cfs.modes.f_directory then
+    return nil, "is a directory"
+  end
+
   local ok, err = self:_createFile(new, 0xFFFF, on)
   if not ok then
     return nil, err
@@ -445,6 +466,10 @@ function _fsobj:unlink(path)
     return nil, inode
   end
 
+  if getftype(inode.mode) == cfs.modes.f_directory then
+    return nil, "is a directory"
+  end
+
   local segm = split(path)
   local pn, parent = self:_resolve("/" .. table.concat(segm, "/", 1, #segm - 1))
   if not pn then
@@ -455,13 +480,63 @@ function _fsobj:unlink(path)
   for i=1, #dirptrlist, 1 do
     if dirptrlist[i] == n then
       table.remove(dirptrlist, i)
-      inode.links = inode.links - 1
+      
+      inode.references = math.max(0, inode.references - 1)
+      
+      if inode.references == 0 then
+        self:_freeInode(n)
+        local dblocks, _dblocks = self:_listDataBlock(inode.datablock)
+        for i=1, #_dblocks, 1 do
+          dblocks[#dblocks+1] = _dblocks[i]
+        end
+        self:_freeBlocks(dblocks)
+      end
+
       self:_writeInode(n, inode)
+
+      self:_saveDataBlocks(parent.datablock, dirptrlist, blk)
       return true
     end
   end
 
   return nil, "unknown error"
+end
+
+function _fsobj:rmdir(path)
+  checkArg(1, path, "string")
+
+  local n, inode = self:_resolve(path)
+  if not n then
+    return nil, inode
+  end
+
+  if getftype(inode.mode) ~= cfs.modes.f_directory then
+    return nil, "not a directory"
+  end
+
+  local segm = split(path)
+  local pn, parent = self:_resolve("/" .. table.concat(segm, "/", 1, #segm - 1))
+  if not pn then
+    return nil, parent
+  end
+
+  local __dirptrlist = self:_listDataBlock(inode.datablock)
+  if #__dirptrlist > 0 then
+    return nil, "directory not empty"
+  end
+
+  self:_freeBlocks{inode.datablock}
+  self:_freeInode(n)
+
+  local pdpt, pdbl = self:_listDataBlock(parent.datablock)
+  for i=1, #pdpt, 1 do
+    if pdpt[i] == n then
+      table.remove(pdpt, i)
+    end
+  end
+  self:_saveDataBlocks(pdpt, pdbl)
+
+  return true
 end
 
 function _fsobj:list(path)
@@ -480,6 +555,7 @@ function _fsobj:list(path)
   local flist = {}
 
   for i, ptr in ipairs(ptrlist) do
+    print("LS", i, ptr)
     local indat, err = self:_readInode(ptr)
     if not indat then
       return nil, err
