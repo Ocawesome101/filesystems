@@ -165,7 +165,6 @@ function _fsobj:_readInode(n)
 
   local data = cfs.inode(_data)
   data.filename = data.filename:gsub("\0", "")
-  print("MODE " .. n .. ": " .. data.mode)
   return data
 end
 
